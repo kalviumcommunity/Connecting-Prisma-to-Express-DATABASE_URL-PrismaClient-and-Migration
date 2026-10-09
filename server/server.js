@@ -11,6 +11,7 @@ import "dotenv/config"; // loads DATABASE_URL from .env before anything reads pr
 import express from "express";
 import cors from "cors";
 import threadsRouter from "./routes/threads.js";
+import prisma from "./prisma/client.js";
 
 // TODO 1: import the PrismaClient singleton you will create in prisma/client.js
 //   import prisma from "./prisma/client.js";
@@ -30,7 +31,18 @@ const PORT = 3001;
 //   A Prisma error here almost always means DATABASE_URL is wrong.
 
 // Replace this plain listen() with the connect-then-listen version above:
-app.listen(PORT, () => {
-  console.log(`✅ Threadbase API running on http://localhost:${PORT}`);
-  console.log("⚠️  Prisma is NOT connected yet — complete the TODOs to add it.");
-});
+async function start() {
+  try {
+    await prisma.$connect();
+    console.log("Prisma connected to the database");
+
+    app.listen(PORT, () => {
+      console.log(`Threadbase API running on http://localhost:${PORT}`);
+    });
+  } catch (error) {
+    console.error("Failed to connect Prisma:", error);
+    process.exit(1);
+  }
+}
+
+start();

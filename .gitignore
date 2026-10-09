@@ -3,6 +3,7 @@ dist/
 .DS_Store
 
 # env files — never commit real ones; commit only *.example
+.env.development
 .env
 .env.*
 !.env.example
