@@ -1,52 +1,107 @@
-# Connect Prisma to Express — Starter
+# Connect Prisma to Express — PostgreSQL setup
 
-A working Express + React app whose data currently lives in an **in-memory array**
-(`server/routes/threads.js`). Restart the server and every thread disappears.
-
-**Your task:** give it a real database. Connect **Prisma + PostgreSQL** so the app
-boots with a live connection — **without changing a single line of the React frontend.**
+This project introduces Prisma + PostgreSQL to the existing Express + React app.
+The React client is intentionally unchanged, and `server/routes/threads.js`
+remains the in-memory API for this lesson. This assignment focuses on configuring
+the database connection, defining the Prisma model, creating the first migration,
+and connecting Prisma before the Express server starts.
 
 ## Prerequisites
+
 - Node.js 18+
-- A local **PostgreSQL** server running, and a database created (e.g. `createdb threadbase`)
+- PostgreSQL running locally
+- A database created, for example: `createdb threadbase`
 
 ## Setup
-```bash
-npm run setup     # installs root, server, and client deps
 
-# client env (browser needs the API URL)
+From the repository root:
+
+```bash
+npm run setup
 cp client/.env.development.example client/.env.development
+cp server/.env.example server/.env
 ```
 
-## What you implement (all server-side, in `server/`)
-1. `cp .env.example .env` and fill in your real `DATABASE_URL`.
-2. Install Prisma: `npm install prisma --save-dev` and `npm install @prisma/client`.
-3. `npx prisma init` (creates `prisma/schema.prisma`).
-4. Write the `Thread` model in `schema.prisma` (`id`, `title`, `body`, `createdAt`).
-5. `npx prisma migrate dev --name init` (creates the table + a migration file).
-6. Create the **PrismaClient singleton** in `prisma/client.js` and import it in `server.js`.
-7. Make `server.js` `await prisma.$connect()` and log a clear "connected" message before it listens.
+Edit `server/.env` and set your own PostgreSQL credentials:
 
-Follow the `TODO` markers in `server/server.js`.
+```env
+DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/threadbase?schema=public"
+```
+
+Replace `USER` and `PASSWORD` with your local PostgreSQL username and password.
+URL-encode special characters in the password. Never commit the real `.env` file.
+
+Install server dependencies if you have not run setup:
+
+```bash
+npm --prefix server install
+```
+
+Generate the Prisma Client and apply the checked-in initial migration:
+
+```bash
+cd server
+npx prisma generate
+npx prisma migrate dev
+cd ..
+```
+
+The migration creates the PostgreSQL `Thread` table. The Prisma schema and
+migration are committed so every developer can reproduce the same database
+structure.
 
 ## Run
+
 ```bash
-npm run dev       # server on :3001, client on :5173
+npm run dev
 ```
 
-## Success looks like
-- The server terminal prints your **"Prisma connected"** message with **no Prisma errors**.
-- The React app loads and shows an **empty list from the database** (`GET /api/threads` → `[]`).
-- `psql`: `SELECT * FROM "Thread";` shows an empty `Thread` table.
+The server connects to PostgreSQL before it starts listening on port 3001.
+A successful startup prints:
 
-## Project layout
+```text
+Prisma connected to PostgreSQL
+Threadbase API running on http://localhost:3001
 ```
+
+If the database is unavailable or `DATABASE_URL` is invalid, startup fails
+with a connection error instead of starting an API that cannot reach its database.
+
+## Prisma model
+
+The `Thread` model contains:
+
+- `id`: auto-incrementing integer primary key
+- `title`: required text
+- `body`: required text with an empty-string default
+- `createdAt`: timestamp set automatically when a row is created
+
+## Project structure
+
+```text
 server/
-  server.js            ← add Prisma import + connect-then-listen (TODOs here)
-  routes/threads.js    ← in-memory API — DO NOT edit
-  prisma/              ← empty; you create schema.prisma, migrations/, client.js
-  .env.example         ← DATABASE_URL placeholder (copy to .env)
-client/                ← complete React app — DO NOT change
+  server.js
+  routes/threads.js
+  prisma/
+    client.js
+    schema.prisma
+    migrations/
+      migration_lock.toml
+      20261120000000_init/
+        migration.sql
+  .env.example
 ```
 
-> **Never commit `.env`.** It holds your database password. `.gitignore` already excludes it; commit `.env.example` only.
+## Scope note
+
+The existing routes file is deliberately not changed in this exercise, as
+requested by the starter instructions. It still serves its in-memory sample
+threads. A later data-layer exercise can replace those array operations with
+Prisma queries. This assignment verifies the PostgreSQL connection and migration
+setup without changing the API or frontend.
+
+## Security
+
+- Keep real database credentials in `server/.env` only.
+- Commit `server/.env.example`, never `server/.env`.
+- Do not expose `DATABASE_URL` to the React client.
